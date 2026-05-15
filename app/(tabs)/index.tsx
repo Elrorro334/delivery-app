@@ -1,98 +1,85 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+// 1. Definimos la estructura de los datos para que TS no se queje
+interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+}
 
-export default function HomeScreen() {
+const MENU_ITEMS: MenuItem[] = [
+  { id: '1', name: 'Hamburguesa Clásica', price: 120 },
+  { id: '2', name: 'Pizza Pepperoni', price: 180 },
+  { id: '3', name: 'Tacos al Pastor (Orden)', price: 80 },
+];
+
+export default function DeliveryApp() {
+  // 2. Le indicamos al estado que el carrito almacenará un arreglo de MenuItem
+  const [cart, setCart] = useState<MenuItem[]>([]);
+
+  // 3. Tipamos el parámetro item
+  const addToCart = (item: MenuItem) => {
+    setCart([...cart, item]);
+    Alert.alert("Agregado", `${item.name} se agregó a tu pedido.`);
+  };
+
+  const calculateTotal = () => {
+    return cart.reduce((total, item) => total + item.price, 0);
+  };
+
+  const processPayment = () => {
+    // 4. BUG INTENCIONAL: Forzamos el tipo "any" para saltarnos la validación
+    // de TypeScript. Así compila, pero al dar clic la app crasheará.
+    const paymentGateway: any = null;
+    paymentGateway.initiateTransaction(); 
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Rodnix Delivery</Text>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <FlatList
+        data={MENU_ITEMS}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.itemCard}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemPrice}>${item.price} MXN</Text>
+            <TouchableOpacity style={styles.addButton} onPress={() => addToCart(item)}>
+              <Text style={styles.buttonText}>Agregar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      />
+
+      <View style={styles.cartSection}>
+        <Text style={styles.cartTotal}>Total a pagar: ${calculateTotal()} MXN</Text>
+        <TouchableOpacity 
+          style={[styles.payButton, cart.length === 0 && styles.disabledButton]} 
+          disabled={cart.length === 0}
+          onPress={processPayment}
+        >
+          <Text style={styles.buttonText}>Proceder al Pago</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  header: { padding: 20, backgroundColor: '#1a1a1a', alignItems: 'center' },
+  title: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
+  itemCard: { backgroundColor: '#fff', padding: 15, margin: 10, borderRadius: 8, elevation: 2 },
+  itemName: { fontSize: 18, fontWeight: '600' },
+  itemPrice: { fontSize: 16, color: '#666', marginVertical: 5 },
+  addButton: { backgroundColor: '#4CAF50', padding: 10, borderRadius: 5, alignItems: 'center' },
+  buttonText: { color: '#fff', fontWeight: 'bold' },
+  cartSection: { padding: 20, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#ddd' },
+  cartTotal: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
+  payButton: { backgroundColor: '#E53935', padding: 15, borderRadius: 8, alignItems: 'center' },
+  disabledButton: { backgroundColor: '#ccc' }
 });
