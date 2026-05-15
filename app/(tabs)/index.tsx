@@ -29,10 +29,19 @@ export default function DeliveryApp() {
   };
 
   const processPayment = () => {
-    // 4. BUG INTENCIONAL: Forzamos el tipo "any" para saltarnos la validación
-    // de TypeScript. Así compila, pero al dar clic la app crasheará.
-    const paymentGateway: any = null;
-    paymentGateway.initiateTransaction(); 
+    try {
+      if (cart.length === 0) {
+        throw new Error("El carrito está vacío.");
+      }
+      // Simulación de pago exitoso
+      Alert.alert(
+        "Pago Exitoso", 
+        `Se han procesado $${calculateTotal()} MXN correctamente. Tu pedido está en camino.`,
+        [{ text: "OK", onPress: () => setCart([]) }]
+      );
+    } catch (error: any) { // Tipamos el error como any o Error
+      Alert.alert("Aviso", error.message);
+    }
   };
 
   return (
